@@ -210,6 +210,10 @@ textarea {
   margin-bottom: 20px;
 }
 
+.study-metrics {
+  grid-template-columns: repeat(5, minmax(120px, 1fr));
+}
+
 .filter-bar {
   display: grid;
   grid-template-columns: repeat(2, minmax(160px, 220px)) auto auto;
