@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import { Briefcase, LogOut, Plus, Save, Trash2 } from 'lucide-react';
+import { Briefcase, LogOut, Plus, Save, Trash2, UserRound } from 'lucide-react';
 import { api } from './api/client';
 import './styles.css';
 
@@ -21,8 +21,10 @@ function App() {
   const [authMode, setAuthMode] = useState('login');
   const [authForm, setAuthForm] = useState({ firstName: '', lastName: '', email: '', password: '' });
   const [form, setForm] = useState(emptyForm);
+  const [profileForm, setProfileForm] = useState({ firstName: '', lastName: '', email: '' });
   const [editingId, setEditingId] = useState(null);
   const [message, setMessage] = useState('');
+  const [profileMessage, setProfileMessage] = useState('');
   const [loading, setLoading] = useState(false);
 
   const statusOptions = ['SAVED', 'APPLIED', 'INTERVIEWING', 'OFFER', 'REJECTED', 'WITHDRAWN'];
@@ -43,6 +45,7 @@ function App() {
         api('/api/applications', { token })
       ]);
       setUser(me);
+      setProfileForm({ firstName: me.firstName, lastName: me.lastName, email: me.email });
       setDashboard(dash);
       setApplications(apps);
     } catch (error) {
@@ -86,6 +89,19 @@ function App() {
   async function deleteApplication(id) {
     await api(`/api/applications/${id}`, { method: 'DELETE', token });
     await loadData();
+  }
+
+  async function submitProfile(event) {
+    event.preventDefault();
+    setProfileMessage('');
+    try {
+      const updated = await api('/api/profile', { method: 'PUT', token, body: profileForm });
+      setUser(updated);
+      setProfileForm({ firstName: updated.firstName, lastName: updated.lastName, email: updated.email });
+      setProfileMessage('Profile updated');
+    } catch (error) {
+      setProfileMessage(error.message);
+    }
   }
 
   function editApplication(application) {
@@ -196,6 +212,22 @@ function App() {
             </article>
           ))}
         </section>
+      </section>
+
+      <section className="profile-band">
+        <form className="profile-panel" onSubmit={submitProfile}>
+          <div className="section-heading">
+            <UserRound size={22} />
+            <h2>Profile</h2>
+          </div>
+          <div className="grid three">
+            <label>First name<input value={profileForm.firstName} onChange={event => setProfileForm({ ...profileForm, firstName: event.target.value })} required /></label>
+            <label>Last name<input value={profileForm.lastName} onChange={event => setProfileForm({ ...profileForm, lastName: event.target.value })} required /></label>
+            <label>Email<input type="email" value={profileForm.email} onChange={event => setProfileForm({ ...profileForm, email: event.target.value })} required /></label>
+          </div>
+          {profileMessage && <p className={profileMessage === 'Profile updated' ? 'success' : 'error'}>{profileMessage}</p>}
+          <button className="primary fit" type="submit"><Save size={17} />Save Profile</button>
+        </form>
       </section>
     </main>
   );
