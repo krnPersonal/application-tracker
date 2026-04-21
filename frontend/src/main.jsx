@@ -410,6 +410,14 @@ function App() {
         {statusOptions.map(status => <article key={status}><span>{status}</span><strong>{statusCounts[status] || 0}</strong></article>)}
       </section>
 
+      <section className="metrics study-metrics">
+        <article><span>Courses</span><strong>{dashboard?.totalCourses || 0}</strong></article>
+        <article><span>Topics</span><strong>{dashboard?.totalTopics || 0}</strong></article>
+        <article><span>Done</span><strong>{dashboard?.completedTopics || 0}</strong></article>
+        <article><span>In progress</span><strong>{dashboard?.inProgressTopics || 0}</strong></article>
+        <article><span>Complete</span><strong>{dashboard?.studyCompletionPercent || 0}%</strong></article>
+      </section>
+
       <section className="workspace">
         <form className="editor" onSubmit={submitApplication}>
           <h2>{editingId ? 'Edit Application' : 'New Application'}</h2>
