@@ -189,6 +189,7 @@ textarea {
 .metrics,
 .workspace,
 .study-band,
+.topic-band,
 .profile-band {
   width: min(1180px, calc(100% - 32px));
   margin: 0 auto;
@@ -329,7 +330,8 @@ mark {
   padding: 0 0 44px;
 }
 
-.study-band {
+.study-band,
+.topic-band {
   display: grid;
   grid-template-columns: 420px 1fr;
   gap: 18px;
@@ -383,6 +385,7 @@ mark {
   .list-filters,
   .resume-row,
   .study-band,
+  .topic-band,
   .workspace {
     grid-template-columns: 1fr;
   }

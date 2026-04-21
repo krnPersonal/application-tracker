@@ -18,11 +18,19 @@ const emptyCourseForm = {
   description: ''
 };
 
+const emptyTopicForm = {
+  courseId: '',
+  title: '',
+  status: 'NOT_STARTED',
+  notes: ''
+};
+
 function App() {
   const [token, setToken] = useState(localStorage.getItem('token') || '');
   const [user, setUser] = useState(null);
   const [applications, setApplications] = useState([]);
   const [courses, setCourses] = useState([]);
+  const [topics, setTopics] = useState([]);
   const [dashboard, setDashboard] = useState(null);
   const [dashboardFilters, setDashboardFilters] = useState({ from: '', to: '' });
   const [applicationFilters, setApplicationFilters] = useState({ q: '', status: '', sort: 'updatedAt', direction: 'desc' });
@@ -30,18 +38,22 @@ function App() {
   const [authForm, setAuthForm] = useState({ firstName: '', lastName: '', email: '', password: '' });
   const [form, setForm] = useState(emptyForm);
   const [courseForm, setCourseForm] = useState(emptyCourseForm);
+  const [topicForm, setTopicForm] = useState(emptyTopicForm);
   const [profileForm, setProfileForm] = useState({ firstName: '', lastName: '', email: '' });
   const [passwordForm, setPasswordForm] = useState({ currentPassword: '', newPassword: '' });
   const [editingId, setEditingId] = useState(null);
   const [editingCourseId, setEditingCourseId] = useState(null);
+  const [editingTopicId, setEditingTopicId] = useState(null);
   const [message, setMessage] = useState('');
   const [courseMessage, setCourseMessage] = useState('');
+  const [topicMessage, setTopicMessage] = useState('');
   const [profileMessage, setProfileMessage] = useState('');
   const [passwordMessage, setPasswordMessage] = useState('');
   const [resumeMessage, setResumeMessage] = useState('');
   const [loading, setLoading] = useState(false);
 
   const statusOptions = ['SAVED', 'APPLIED', 'INTERVIEWING', 'OFFER', 'REJECTED', 'WITHDRAWN'];
+  const topicStatusOptions = ['NOT_STARTED', 'IN_PROGRESS', 'DONE'];
 
   const statusCounts = useMemo(() => dashboard?.statusCounts || {}, [dashboard]);
 
@@ -63,17 +75,19 @@ function App() {
       if (appFilters.sort) applicationsQuery.set('sort', appFilters.sort);
       if (appFilters.direction) applicationsQuery.set('direction', appFilters.direction);
       const applicationsPath = `/api/applications${applicationsQuery.toString() ? `?${applicationsQuery}` : ''}`;
-      const [me, dash, apps, studyCourses] = await Promise.all([
+      const [me, dash, apps, studyCourses, studyTopics] = await Promise.all([
         api('/api/me', { token }),
         api(dashboardPath, { token }),
         api(applicationsPath, { token }),
-        api('/api/study/courses', { token })
+        api('/api/study/courses', { token }),
+        api('/api/study/topics', { token })
       ]);
       setUser(me);
       setProfileForm({ firstName: me.firstName, lastName: me.lastName, email: me.email });
       setDashboard(dash);
       setApplications(apps);
       setCourses(studyCourses);
+      setTopics(studyTopics);
     } catch (error) {
       setMessage(error.message);
       logout();
@@ -141,6 +155,37 @@ function App() {
       setCourseMessage('Course deleted');
     } catch (error) {
       setCourseMessage(error.message);
+    }
+  }
+
+  async function submitTopic(event) {
+    event.preventDefault();
+    setTopicMessage('');
+    const path = editingTopicId ? `/api/study/topics/${editingTopicId}` : '/api/study/topics';
+    const method = editingTopicId ? 'PUT' : 'POST';
+    try {
+      await api(path, {
+        method,
+        token,
+        body: { ...topicForm, courseId: Number(topicForm.courseId) }
+      });
+      setTopicForm(emptyTopicForm);
+      setEditingTopicId(null);
+      await loadData();
+      setTopicMessage(editingTopicId ? 'Topic updated' : 'Topic added');
+    } catch (error) {
+      setTopicMessage(error.message);
+    }
+  }
+
+  async function deleteTopic(id) {
+    setTopicMessage('');
+    try {
+      await api(`/api/study/topics/${id}`, { method: 'DELETE', token });
+      await loadData();
+      setTopicMessage('Topic deleted');
+    } catch (error) {
+      setTopicMessage(error.message);
     }
   }
 
@@ -286,12 +331,23 @@ function App() {
     });
   }
 
+  function editTopic(topic) {
+    setEditingTopicId(topic.id);
+    setTopicForm({
+      courseId: String(topic.courseId),
+      title: topic.title,
+      status: topic.status,
+      notes: topic.notes || ''
+    });
+  }
+
   function logout() {
     localStorage.removeItem('token');
     setToken('');
     setUser(null);
     setApplications([]);
     setCourses([]);
+    setTopics([]);
     setDashboard(null);
   }
 
@@ -434,6 +490,47 @@ function App() {
               </div>
               <div className="card-actions">
                 <button className="icon-button danger" onClick={event => { event.stopPropagation(); deleteCourse(course.id); }} title="Delete course"><Trash2 size={17} /></button>
+              </div>
+            </article>
+          ))}
+        </section>
+      </section>
+
+      <section className="topic-band">
+        <form className="study-editor" onSubmit={submitTopic}>
+          <div className="section-heading">
+            <BookOpen size={22} />
+            <h2>{editingTopicId ? 'Edit Topic' : 'New Topic'}</h2>
+          </div>
+          <label>Course<select value={topicForm.courseId} onChange={event => setTopicForm({ ...topicForm, courseId: event.target.value })} required><option value="">Select course</option>{courses.map(course => <option key={course.id} value={course.id}>{course.name}</option>)}</select></label>
+          <label>Topic title<input value={topicForm.title} onChange={event => setTopicForm({ ...topicForm, title: event.target.value })} required /></label>
+          <label>Status<select value={topicForm.status} onChange={event => setTopicForm({ ...topicForm, status: event.target.value })}>{topicStatusOptions.map(status => <option key={status}>{status}</option>)}</select></label>
+          <label>Notes<textarea rows="4" value={topicForm.notes} onChange={event => setTopicForm({ ...topicForm, notes: event.target.value })} /></label>
+          {topicMessage && <p className={['Topic added', 'Topic updated', 'Topic deleted'].includes(topicMessage) ? 'success' : 'error'}>{topicMessage}</p>}
+          <div className="title-actions">
+            <button className="primary" type="submit" disabled={courses.length === 0}><Save size={17} />{editingTopicId ? 'Save Topic' : 'Add Topic'}</button>
+            {editingTopicId && <button className="secondary" type="button" onClick={() => { setTopicForm(emptyTopicForm); setEditingTopicId(null); }}>Cancel</button>}
+          </div>
+        </form>
+        <section className="study-list">
+          <div className="list-title">
+            <div className="section-heading">
+              <BookOpen size={22} />
+              <h2>Study Topics</h2>
+            </div>
+            <button className="secondary" onClick={() => { setTopicForm(emptyTopicForm); setEditingTopicId(null); }} disabled={courses.length === 0}><Plus size={16} />New</button>
+          </div>
+          {courses.length === 0 && <p className="muted">Add a course before creating topics.</p>}
+          {courses.length > 0 && topics.length === 0 && <p className="muted">No topics yet.</p>}
+          {topics.map(topic => (
+            <article className="application-card" key={topic.id} onClick={() => editTopic(topic)}>
+              <div>
+                <strong>{topic.title}</strong>
+                <span>{topic.courseName} - {topic.notes || 'No notes'}</span>
+              </div>
+              <div className="card-actions">
+                <mark>{topic.status}</mark>
+                <button className="icon-button danger" onClick={event => { event.stopPropagation(); deleteTopic(topic.id); }} title="Delete topic"><Trash2 size={17} /></button>
               </div>
             </article>
           ))}
