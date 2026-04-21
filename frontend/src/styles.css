@@ -185,6 +185,7 @@ textarea {
 }
 
 .hero,
+.filter-bar,
 .metrics,
 .workspace,
 .profile-band {
@@ -205,6 +206,14 @@ textarea {
   grid-template-columns: repeat(7, minmax(120px, 1fr));
   gap: 12px;
   margin-bottom: 20px;
+}
+
+.filter-bar {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(160px, 220px)) auto auto;
+  align-items: end;
+  gap: 12px;
+  margin-bottom: 16px;
 }
 
 .metrics article,
@@ -340,6 +349,7 @@ mark {
 @media (max-width: 900px) {
   .two,
   .three,
+  .filter-bar,
   .resume-row,
   .workspace {
     grid-template-columns: 1fr;
