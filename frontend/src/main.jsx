@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import { Briefcase, LogOut, Plus, Save, Trash2, UserRound } from 'lucide-react';
-import { api } from './api/client';
+import { Briefcase, Download, LogOut, Plus, Save, Trash2, Upload, UserRound } from 'lucide-react';
+import { API_BASE_URL, api } from './api/client';
 import './styles.css';
 
 const emptyForm = {
@@ -27,6 +27,7 @@ function App() {
   const [message, setMessage] = useState('');
   const [profileMessage, setProfileMessage] = useState('');
   const [passwordMessage, setPasswordMessage] = useState('');
+  const [resumeMessage, setResumeMessage] = useState('');
   const [loading, setLoading] = useState(false);
 
   const statusOptions = ['SAVED', 'APPLIED', 'INTERVIEWING', 'OFFER', 'REJECTED', 'WITHDRAWN'];
@@ -115,6 +116,58 @@ function App() {
       setPasswordMessage('Password updated');
     } catch (error) {
       setPasswordMessage(error.message);
+    }
+  }
+
+  async function submitResume(event) {
+    event.preventDefault();
+    setResumeMessage('');
+    const file = event.currentTarget.elements.resume.files[0];
+    if (!file) {
+      setResumeMessage('Resume file is required');
+      return;
+    }
+    const data = new FormData();
+    data.append('file', file);
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/profile/resume`, {
+        method: 'PUT',
+        headers: { Authorization: `Bearer ${token}` },
+        body: data
+      });
+      const updated = await response.json();
+      if (!response.ok) {
+        throw new Error(updated?.message || 'Resume upload failed');
+      }
+      setUser(updated);
+      setProfileForm({ firstName: updated.firstName, lastName: updated.lastName, email: updated.email });
+      setResumeMessage('Resume uploaded');
+      event.currentTarget.reset();
+    } catch (error) {
+      setResumeMessage(error.message);
+    }
+  }
+
+  async function downloadResume() {
+    setResumeMessage('');
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/profile/resume`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (!response.ok) {
+        const text = await response.text();
+        const error = text ? JSON.parse(text) : null;
+        throw new Error(error?.message || 'Resume download failed');
+      }
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = user?.resumeFileName || 'resume';
+      link.click();
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      setResumeMessage(error.message);
     }
   }
 
@@ -253,6 +306,21 @@ function App() {
           </div>
           {passwordMessage && <p className={passwordMessage === 'Password updated' ? 'success' : 'error'}>{passwordMessage}</p>}
           <button className="primary fit" type="submit"><Save size={17} />Change Password</button>
+        </form>
+        <form className="profile-panel" onSubmit={submitResume}>
+          <div className="section-heading">
+            <Upload size={22} />
+            <h2>Resume</h2>
+          </div>
+          <div className="resume-row">
+            <label>Resume file<input name="resume" type="file" accept=".pdf,.doc,.docx" required /></label>
+            <div className="resume-actions">
+              <span className="muted">{user?.resumeFileName || 'No resume uploaded'}</span>
+              <button className="secondary" type="button" onClick={downloadResume} disabled={!user?.resumeFileName}><Download size={17} />Download</button>
+            </div>
+          </div>
+          {resumeMessage && <p className={resumeMessage === 'Resume uploaded' ? 'success' : 'error'}>{resumeMessage}</p>}
+          <button className="primary fit" type="submit"><Upload size={17} />Upload Resume</button>
         </form>
       </section>
     </main>
