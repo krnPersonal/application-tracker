@@ -22,9 +22,11 @@ function App() {
   const [authForm, setAuthForm] = useState({ firstName: '', lastName: '', email: '', password: '' });
   const [form, setForm] = useState(emptyForm);
   const [profileForm, setProfileForm] = useState({ firstName: '', lastName: '', email: '' });
+  const [passwordForm, setPasswordForm] = useState({ currentPassword: '', newPassword: '' });
   const [editingId, setEditingId] = useState(null);
   const [message, setMessage] = useState('');
   const [profileMessage, setProfileMessage] = useState('');
+  const [passwordMessage, setPasswordMessage] = useState('');
   const [loading, setLoading] = useState(false);
 
   const statusOptions = ['SAVED', 'APPLIED', 'INTERVIEWING', 'OFFER', 'REJECTED', 'WITHDRAWN'];
@@ -101,6 +103,18 @@ function App() {
       setProfileMessage('Profile updated');
     } catch (error) {
       setProfileMessage(error.message);
+    }
+  }
+
+  async function submitPassword(event) {
+    event.preventDefault();
+    setPasswordMessage('');
+    try {
+      await api('/api/profile/password', { method: 'PUT', token, body: passwordForm });
+      setPasswordForm({ currentPassword: '', newPassword: '' });
+      setPasswordMessage('Password updated');
+    } catch (error) {
+      setPasswordMessage(error.message);
     }
   }
 
@@ -227,6 +241,18 @@ function App() {
           </div>
           {profileMessage && <p className={profileMessage === 'Profile updated' ? 'success' : 'error'}>{profileMessage}</p>}
           <button className="primary fit" type="submit"><Save size={17} />Save Profile</button>
+        </form>
+        <form className="profile-panel" onSubmit={submitPassword}>
+          <div className="section-heading">
+            <UserRound size={22} />
+            <h2>Password</h2>
+          </div>
+          <div className="grid two">
+            <label>Current password<input type="password" value={passwordForm.currentPassword} onChange={event => setPasswordForm({ ...passwordForm, currentPassword: event.target.value })} required /></label>
+            <label>New password<input type="password" minLength="8" value={passwordForm.newPassword} onChange={event => setPasswordForm({ ...passwordForm, newPassword: event.target.value })} required /></label>
+          </div>
+          {passwordMessage && <p className={passwordMessage === 'Password updated' ? 'success' : 'error'}>{passwordMessage}</p>}
+          <button className="primary fit" type="submit"><Save size={17} />Change Password</button>
         </form>
       </section>
     </main>

@@ -294,6 +294,8 @@ mark {
 }
 
 .profile-band {
+  display: grid;
+  gap: 18px;
   padding: 0 0 44px;
 }
 
