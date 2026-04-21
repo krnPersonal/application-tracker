@@ -1,5 +1,18 @@
 export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
 
+export function errorMessageFromText(text, fallback = 'Request failed') {
+  if (!text) {
+    return fallback;
+  }
+  try {
+    const data = JSON.parse(text);
+    const fieldMessage = data?.fields ? Object.values(data.fields).join(', ') : '';
+    return fieldMessage || data?.message || fallback;
+  } catch {
+    return text || fallback;
+  }
+}
+
 export async function api(path, { method = 'GET', token, body } = {}) {
   const headers = { 'Content-Type': 'application/json' };
   if (token) {
@@ -17,12 +30,10 @@ export async function api(path, { method = 'GET', token, body } = {}) {
   }
 
   const text = await response.text();
-  const data = text ? JSON.parse(text) : null;
 
   if (!response.ok) {
-    const fieldMessage = data?.fields ? Object.values(data.fields).join(', ') : '';
-    throw new Error(fieldMessage || data?.message || 'Request failed');
+    throw new Error(errorMessageFromText(text));
   }
 
-  return data;
+  return text ? JSON.parse(text) : null;
 }

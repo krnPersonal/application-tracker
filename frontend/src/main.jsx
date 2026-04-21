@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BookOpen, Briefcase, Download, LogOut, Plus, Save, Trash2, Upload, UserRound } from 'lucide-react';
-import { API_BASE_URL, api } from './api/client';
+import { API_BASE_URL, api, errorMessageFromText } from './api/client';
 import './styles.css';
 
 const emptyForm = {
@@ -273,8 +273,7 @@ function App() {
       });
       if (!response.ok) {
         const text = await response.text();
-        const error = text ? JSON.parse(text) : null;
-        throw new Error(error?.message || 'Resume download failed');
+        throw new Error(errorMessageFromText(text, 'Resume download failed'));
       }
       const blob = await response.blob();
       const url = URL.createObjectURL(blob);
@@ -296,8 +295,7 @@ function App() {
       });
       if (!response.ok) {
         const text = await response.text();
-        const error = text ? JSON.parse(text) : null;
-        throw new Error(error?.message || 'PDF download failed');
+        throw new Error(errorMessageFromText(text, 'PDF download failed'));
       }
       const blob = await response.blob();
       const url = URL.createObjectURL(blob);
@@ -319,8 +317,7 @@ function App() {
       });
       if (!response.ok) {
         const text = await response.text();
-        const error = text ? JSON.parse(text) : null;
-        throw new Error(error?.message || 'Study PDF download failed');
+        throw new Error(errorMessageFromText(text, 'Study PDF download failed'));
       }
       const blob = await response.blob();
       const url = URL.createObjectURL(blob);
