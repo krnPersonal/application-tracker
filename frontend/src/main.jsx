@@ -311,6 +311,29 @@ function App() {
     }
   }
 
+  async function downloadStudyPdf() {
+    setTopicMessage('');
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/study/report.pdf`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (!response.ok) {
+        const text = await response.text();
+        const error = text ? JSON.parse(text) : null;
+        throw new Error(error?.message || 'Study PDF download failed');
+      }
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'study-report.pdf';
+      link.click();
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      setTopicMessage(error.message);
+    }
+  }
+
   function editApplication(application) {
     setEditingId(application.id);
     setForm({
@@ -487,7 +510,10 @@ function App() {
               <BookOpen size={22} />
               <h2>Study Courses</h2>
             </div>
-            <button className="secondary" onClick={() => { setCourseForm(emptyCourseForm); setEditingCourseId(null); }}><Plus size={16} />New</button>
+            <div className="title-actions">
+              <button className="secondary" onClick={downloadStudyPdf}><Download size={16} />PDF</button>
+              <button className="secondary" onClick={() => { setCourseForm(emptyCourseForm); setEditingCourseId(null); }}><Plus size={16} />New</button>
+            </div>
           </div>
           {courses.length === 0 && <p className="muted">No courses yet.</p>}
           {courses.map(course => (
