@@ -272,6 +272,11 @@ textarea {
   gap: 14px;
 }
 
+.title-actions {
+  display: flex;
+  gap: 8px;
+}
+
 .list {
   display: grid;
   align-content: start;
