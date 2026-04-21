@@ -278,6 +278,12 @@ textarea {
   gap: 12px;
 }
 
+.list-filters {
+  display: grid;
+  grid-template-columns: minmax(160px, 1fr) repeat(3, minmax(120px, 150px));
+  gap: 12px;
+}
+
 .application-card {
   border: 1px solid #dfe5dc;
   border-radius: 8px;
@@ -350,6 +356,7 @@ mark {
   .two,
   .three,
   .filter-bar,
+  .list-filters,
   .resume-row,
   .workspace {
     grid-template-columns: 1fr;
