@@ -10,6 +10,12 @@ Full-stack Java/Spring Boot + React application for tracking job applications.
 
 ## Run Backend
 
+Optional local environment file:
+
+```bash
+cp backend/.env.example backend/.env
+```
+
 Start MySQL with Docker Compose:
 
 ```bash
@@ -47,6 +53,12 @@ http://localhost:8080/swagger-ui.html
 ```
 
 ## Run Frontend
+
+Optional local environment file:
+
+```bash
+cp frontend/.env.example frontend/.env
+```
 
 ```bash
 cd frontend
