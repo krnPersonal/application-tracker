@@ -3,7 +3,10 @@ package com.applicationtracker.job;
 import jakarta.validation.Valid;
 import java.security.Principal;
 import java.util.List;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -20,9 +23,11 @@ import org.springframework.web.bind.annotation.RestController;
 public class JobApplicationController {
 
     private final JobApplicationService service;
+    private final JobApplicationPdfService pdfService;
 
-    public JobApplicationController(JobApplicationService service) {
+    public JobApplicationController(JobApplicationService service, JobApplicationPdfService pdfService) {
         this.service = service;
+        this.pdfService = pdfService;
     }
 
     @GetMapping
@@ -50,5 +55,13 @@ public class JobApplicationController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     void delete(Principal principal, @PathVariable Long id) {
         service.delete(principal.getName(), id);
+    }
+
+    @GetMapping("/report.pdf")
+    ResponseEntity<byte[]> exportPdf(Principal principal) {
+        return ResponseEntity.ok()
+                .contentType(MediaType.APPLICATION_PDF)
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"job-applications.pdf\"")
+                .body(pdfService.export(principal.getName()));
     }
 }
