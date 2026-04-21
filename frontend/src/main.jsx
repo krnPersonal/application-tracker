@@ -18,6 +18,7 @@ function App() {
   const [user, setUser] = useState(null);
   const [applications, setApplications] = useState([]);
   const [dashboard, setDashboard] = useState(null);
+  const [dashboardFilters, setDashboardFilters] = useState({ from: '', to: '' });
   const [authMode, setAuthMode] = useState('login');
   const [authForm, setAuthForm] = useState({ firstName: '', lastName: '', email: '', password: '' });
   const [form, setForm] = useState(emptyForm);
@@ -39,12 +40,16 @@ function App() {
     loadData();
   }, [token]);
 
-  async function loadData() {
+  async function loadData(filters = dashboardFilters) {
     try {
       setLoading(true);
+      const dashboardQuery = new URLSearchParams();
+      if (filters.from) dashboardQuery.set('from', filters.from);
+      if (filters.to) dashboardQuery.set('to', filters.to);
+      const dashboardPath = `/api/dashboard${dashboardQuery.toString() ? `?${dashboardQuery}` : ''}`;
       const [me, dash, apps] = await Promise.all([
         api('/api/me', { token }),
-        api('/api/dashboard', { token }),
+        api(dashboardPath, { token }),
         api('/api/applications', { token })
       ]);
       setUser(me);
@@ -117,6 +122,17 @@ function App() {
     } catch (error) {
       setPasswordMessage(error.message);
     }
+  }
+
+  async function submitDashboardFilters(event) {
+    event.preventDefault();
+    await loadData(dashboardFilters);
+  }
+
+  function clearDashboardFilters() {
+    const emptyFilters = { from: '', to: '' };
+    setDashboardFilters(emptyFilters);
+    loadData(emptyFilters);
   }
 
   async function submitResume(event) {
@@ -237,6 +253,13 @@ function App() {
         <h1>Job Applications</h1>
         <p>Organize every role, status, link, and note in one focused workflow.</p>
       </section>
+
+      <form className="filter-bar" onSubmit={submitDashboardFilters}>
+        <label>From<input type="date" value={dashboardFilters.from} onChange={event => setDashboardFilters({ ...dashboardFilters, from: event.target.value })} /></label>
+        <label>To<input type="date" value={dashboardFilters.to} onChange={event => setDashboardFilters({ ...dashboardFilters, to: event.target.value })} /></label>
+        <button className="primary fit" type="submit">Apply</button>
+        <button className="secondary fit" type="button" onClick={clearDashboardFilters}>Clear</button>
+      </form>
 
       <section className="metrics">
         <article><span>Total</span><strong>{dashboard?.totalApplications || 0}</strong></article>
