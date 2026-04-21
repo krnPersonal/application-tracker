@@ -188,6 +188,7 @@ textarea {
 .filter-bar,
 .metrics,
 .workspace,
+.study-band,
 .profile-band {
   width: min(1180px, calc(100% - 32px));
   margin: 0 auto;
@@ -219,6 +220,8 @@ textarea {
 .metrics article,
 .editor,
 .list,
+.study-editor,
+.study-list,
 .profile-panel {
   background: #ffffff;
   border: 1px solid #dfe5dc;
@@ -250,6 +253,8 @@ textarea {
 
 .editor,
 .list,
+.study-editor,
+.study-list,
 .profile-panel {
   padding: 20px;
 }
@@ -324,6 +329,20 @@ mark {
   padding: 0 0 44px;
 }
 
+.study-band {
+  display: grid;
+  grid-template-columns: 420px 1fr;
+  gap: 18px;
+  padding: 0 0 42px;
+}
+
+.study-editor,
+.study-list {
+  display: grid;
+  align-content: start;
+  gap: 16px;
+}
+
 .profile-panel {
   display: grid;
   gap: 16px;
@@ -363,6 +382,7 @@ mark {
   .filter-bar,
   .list-filters,
   .resume-row,
+  .study-band,
   .workspace {
     grid-template-columns: 1fr;
   }

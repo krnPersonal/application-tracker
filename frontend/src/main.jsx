@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import { Briefcase, Download, LogOut, Plus, Save, Trash2, Upload, UserRound } from 'lucide-react';
+import { BookOpen, Briefcase, Download, LogOut, Plus, Save, Trash2, Upload, UserRound } from 'lucide-react';
 import { API_BASE_URL, api } from './api/client';
 import './styles.css';
 
@@ -13,20 +13,29 @@ const emptyForm = {
   notes: ''
 };
 
+const emptyCourseForm = {
+  name: '',
+  description: ''
+};
+
 function App() {
   const [token, setToken] = useState(localStorage.getItem('token') || '');
   const [user, setUser] = useState(null);
   const [applications, setApplications] = useState([]);
+  const [courses, setCourses] = useState([]);
   const [dashboard, setDashboard] = useState(null);
   const [dashboardFilters, setDashboardFilters] = useState({ from: '', to: '' });
   const [applicationFilters, setApplicationFilters] = useState({ q: '', status: '', sort: 'updatedAt', direction: 'desc' });
   const [authMode, setAuthMode] = useState('login');
   const [authForm, setAuthForm] = useState({ firstName: '', lastName: '', email: '', password: '' });
   const [form, setForm] = useState(emptyForm);
+  const [courseForm, setCourseForm] = useState(emptyCourseForm);
   const [profileForm, setProfileForm] = useState({ firstName: '', lastName: '', email: '' });
   const [passwordForm, setPasswordForm] = useState({ currentPassword: '', newPassword: '' });
   const [editingId, setEditingId] = useState(null);
+  const [editingCourseId, setEditingCourseId] = useState(null);
   const [message, setMessage] = useState('');
+  const [courseMessage, setCourseMessage] = useState('');
   const [profileMessage, setProfileMessage] = useState('');
   const [passwordMessage, setPasswordMessage] = useState('');
   const [resumeMessage, setResumeMessage] = useState('');
@@ -54,15 +63,17 @@ function App() {
       if (appFilters.sort) applicationsQuery.set('sort', appFilters.sort);
       if (appFilters.direction) applicationsQuery.set('direction', appFilters.direction);
       const applicationsPath = `/api/applications${applicationsQuery.toString() ? `?${applicationsQuery}` : ''}`;
-      const [me, dash, apps] = await Promise.all([
+      const [me, dash, apps, studyCourses] = await Promise.all([
         api('/api/me', { token }),
         api(dashboardPath, { token }),
-        api(applicationsPath, { token })
+        api(applicationsPath, { token }),
+        api('/api/study/courses', { token })
       ]);
       setUser(me);
       setProfileForm({ firstName: me.firstName, lastName: me.lastName, email: me.email });
       setDashboard(dash);
       setApplications(apps);
+      setCourses(studyCourses);
     } catch (error) {
       setMessage(error.message);
       logout();
@@ -104,6 +115,33 @@ function App() {
   async function deleteApplication(id) {
     await api(`/api/applications/${id}`, { method: 'DELETE', token });
     await loadData();
+  }
+
+  async function submitCourse(event) {
+    event.preventDefault();
+    setCourseMessage('');
+    const path = editingCourseId ? `/api/study/courses/${editingCourseId}` : '/api/study/courses';
+    const method = editingCourseId ? 'PUT' : 'POST';
+    try {
+      await api(path, { method, token, body: courseForm });
+      setCourseForm(emptyCourseForm);
+      setEditingCourseId(null);
+      await loadData();
+      setCourseMessage(editingCourseId ? 'Course updated' : 'Course added');
+    } catch (error) {
+      setCourseMessage(error.message);
+    }
+  }
+
+  async function deleteCourse(id) {
+    setCourseMessage('');
+    try {
+      await api(`/api/study/courses/${id}`, { method: 'DELETE', token });
+      await loadData();
+      setCourseMessage('Course deleted');
+    } catch (error) {
+      setCourseMessage(error.message);
+    }
   }
 
   async function submitProfile(event) {
@@ -240,11 +278,20 @@ function App() {
     });
   }
 
+  function editCourse(course) {
+    setEditingCourseId(course.id);
+    setCourseForm({
+      name: course.name,
+      description: course.description || ''
+    });
+  }
+
   function logout() {
     localStorage.removeItem('token');
     setToken('');
     setUser(null);
     setApplications([]);
+    setCourses([]);
     setDashboard(null);
   }
 
@@ -350,6 +397,43 @@ function App() {
               <div className="card-actions">
                 <mark>{application.status}</mark>
                 <button className="icon-button danger" onClick={event => { event.stopPropagation(); deleteApplication(application.id); }} title="Delete"><Trash2 size={17} /></button>
+              </div>
+            </article>
+          ))}
+        </section>
+      </section>
+
+      <section className="study-band">
+        <form className="study-editor" onSubmit={submitCourse}>
+          <div className="section-heading">
+            <BookOpen size={22} />
+            <h2>{editingCourseId ? 'Edit Course' : 'New Course'}</h2>
+          </div>
+          <label>Course name<input value={courseForm.name} onChange={event => setCourseForm({ ...courseForm, name: event.target.value })} required /></label>
+          <label>Description<textarea rows="4" value={courseForm.description} onChange={event => setCourseForm({ ...courseForm, description: event.target.value })} /></label>
+          {courseMessage && <p className={['Course added', 'Course updated', 'Course deleted'].includes(courseMessage) ? 'success' : 'error'}>{courseMessage}</p>}
+          <div className="title-actions">
+            <button className="primary" type="submit"><Save size={17} />{editingCourseId ? 'Save Course' : 'Add Course'}</button>
+            {editingCourseId && <button className="secondary" type="button" onClick={() => { setCourseForm(emptyCourseForm); setEditingCourseId(null); }}>Cancel</button>}
+          </div>
+        </form>
+        <section className="study-list">
+          <div className="list-title">
+            <div className="section-heading">
+              <BookOpen size={22} />
+              <h2>Study Courses</h2>
+            </div>
+            <button className="secondary" onClick={() => { setCourseForm(emptyCourseForm); setEditingCourseId(null); }}><Plus size={16} />New</button>
+          </div>
+          {courses.length === 0 && <p className="muted">No courses yet.</p>}
+          {courses.map(course => (
+            <article className="application-card" key={course.id} onClick={() => editCourse(course)}>
+              <div>
+                <strong>{course.name}</strong>
+                <span>{course.description || 'No description'}</span>
+              </div>
+              <div className="card-actions">
+                <button className="icon-button danger" onClick={event => { event.stopPropagation(); deleteCourse(course.id); }} title="Delete course"><Trash2 size={17} /></button>
               </div>
             </article>
           ))}
