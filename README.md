@@ -10,7 +10,21 @@ Full-stack Java/Spring Boot + React application for tracking job applications.
 
 ## Run Backend
 
-Create the database and user:
+Start MySQL with Docker Compose:
+
+```bash
+docker compose up -d mysql
+```
+
+The Compose service matches the backend defaults:
+
+```text
+DB_URL=jdbc:mysql://localhost:3306/application_tracker?createDatabaseIfNotExist=true&serverTimezone=UTC
+DB_USERNAME=application_tracker_app
+DB_PASSWORD=password
+```
+
+If you prefer a local MySQL install, create the database and user manually:
 
 ```sql
 CREATE DATABASE application_tracker;
@@ -19,7 +33,7 @@ GRANT ALL PRIVILEGES ON application_tracker.* TO 'application_tracker_app'@'loca
 FLUSH PRIVILEGES;
 ```
 
-Start the API:
+Start the API after MySQL is healthy:
 
 ```bash
 cd backend
