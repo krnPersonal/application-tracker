@@ -6,9 +6,11 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.applicationtracker.common.BadRequestException;
+import com.applicationtracker.common.NotFoundException;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.mock.web.MockMultipartFile;
 
 class ProfileServiceTest {
 
@@ -68,6 +70,85 @@ class ProfileServiceTest {
         service.changePassword("user@example.com", new ChangePasswordRequest("old-password", "new-password"));
 
         assertThat(user.getPasswordHash()).isEqualTo("new-hash");
+    }
+
+    @Test
+    void uploadResumeStoresFileMetadataAndBytes() {
+        UserAccount user = user("user@example.com", "hash");
+        MockMultipartFile resume = new MockMultipartFile(
+                "file",
+                "resume.pdf",
+                "application/pdf",
+                "resume-data".getBytes());
+        when(users.findByEmailIgnoreCase("user@example.com")).thenReturn(Optional.of(user));
+
+        UserSummary summary = service.uploadResume("user@example.com", resume);
+
+        assertThat(user.getResumeFileName()).isEqualTo("resume.pdf");
+        assertThat(user.getResumeContentType()).isEqualTo("application/pdf");
+        assertThat(user.getResumeData()).isEqualTo("resume-data".getBytes());
+        assertThat(summary.resumeFileName()).isEqualTo("resume.pdf");
+    }
+
+    @Test
+    void uploadResumeDefaultsMissingContentType() {
+        UserAccount user = user("user@example.com", "hash");
+        MockMultipartFile resume = new MockMultipartFile(
+                "file",
+                "resume.bin",
+                null,
+                "resume-data".getBytes());
+        when(users.findByEmailIgnoreCase("user@example.com")).thenReturn(Optional.of(user));
+
+        service.uploadResume("user@example.com", resume);
+
+        assertThat(user.getResumeContentType()).isEqualTo("application/octet-stream");
+    }
+
+    @Test
+    void uploadResumeRejectsEmptyFile() {
+        MockMultipartFile resume = new MockMultipartFile("file", "resume.pdf", "application/pdf", new byte[0]);
+
+        assertThatThrownBy(() -> service.uploadResume("user@example.com", resume))
+                .isInstanceOf(BadRequestException.class)
+                .hasMessage("Resume file is required");
+    }
+
+    @Test
+    void uploadResumeRejectsFilesLargerThanFiveMegabytes() {
+        MockMultipartFile resume = new MockMultipartFile(
+                "file",
+                "resume.pdf",
+                "application/pdf",
+                new byte[(5 * 1024 * 1024) + 1]);
+
+        assertThatThrownBy(() -> service.uploadResume("user@example.com", resume))
+                .isInstanceOf(BadRequestException.class)
+                .hasMessage("Resume must be 5MB or smaller");
+    }
+
+    @Test
+    void downloadResumeReturnsStoredFile() {
+        UserAccount user = user("user@example.com", "hash");
+        user.setResumeFileName("resume.pdf");
+        user.setResumeContentType("application/pdf");
+        user.setResumeData("resume-data".getBytes());
+        when(users.findByEmailIgnoreCase("user@example.com")).thenReturn(Optional.of(user));
+
+        ResumeDownload resume = service.downloadResume("user@example.com");
+
+        assertThat(resume.fileName()).isEqualTo("resume.pdf");
+        assertThat(resume.contentType()).isEqualTo("application/pdf");
+        assertThat(resume.data()).isEqualTo("resume-data".getBytes());
+    }
+
+    @Test
+    void downloadResumeRejectsMissingResume() {
+        when(users.findByEmailIgnoreCase("user@example.com")).thenReturn(Optional.of(user("user@example.com", "hash")));
+
+        assertThatThrownBy(() -> service.downloadResume("user@example.com"))
+                .isInstanceOf(NotFoundException.class)
+                .hasMessage("Resume not found");
     }
 
     private UserAccount user(String email, String passwordHash) {
