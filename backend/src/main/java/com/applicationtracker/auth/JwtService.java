@@ -1,6 +1,7 @@
 package com.applicationtracker.auth;
 
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import java.nio.charset.StandardCharsets;
@@ -40,7 +41,12 @@ public class JwtService {
     }
 
     public boolean isValid(String token, UserDetails userDetails) {
-        return userDetails.getUsername().equals(extractUsername(token)) && claims(token).getExpiration().after(new Date());
+        try {
+            Claims claims = claims(token);
+            return userDetails.getUsername().equals(claims.getSubject()) && claims.getExpiration().after(new Date());
+        } catch (JwtException | IllegalArgumentException exception) {
+            return false;
+        }
     }
 
     private Claims claims(String token) {
