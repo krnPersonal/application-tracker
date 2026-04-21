@@ -32,6 +32,15 @@ public class UserAccount {
     @Column(nullable = false)
     private String passwordHash;
 
+    @Column(length = 255)
+    private String resumeFileName;
+
+    @Column(length = 120)
+    private String resumeContentType;
+
+    @Column(columnDefinition = "LONGBLOB")
+    private byte[] resumeData;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 30)
     private Role role = Role.USER;
@@ -88,6 +97,30 @@ public class UserAccount {
 
     public void setPasswordHash(String passwordHash) {
         this.passwordHash = passwordHash;
+    }
+
+    public String getResumeFileName() {
+        return resumeFileName;
+    }
+
+    public void setResumeFileName(String resumeFileName) {
+        this.resumeFileName = resumeFileName;
+    }
+
+    public String getResumeContentType() {
+        return resumeContentType;
+    }
+
+    public void setResumeContentType(String resumeContentType) {
+        this.resumeContentType = resumeContentType;
+    }
+
+    public byte[] getResumeData() {
+        return resumeData;
+    }
+
+    public void setResumeData(byte[] resumeData) {
+        this.resumeData = resumeData;
     }
 
     public Role getRole() {

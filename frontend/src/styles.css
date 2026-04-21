@@ -23,6 +23,11 @@ button {
   cursor: pointer;
 }
 
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
 .auth-shell,
 .app-shell {
   min-height: 100vh;
@@ -314,6 +319,20 @@ mark {
   margin: 0;
 }
 
+.resume-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 16px;
+  align-items: end;
+}
+
+.resume-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 44px;
+}
+
 .fit {
   width: fit-content;
 }
@@ -321,8 +340,14 @@ mark {
 @media (max-width: 900px) {
   .two,
   .three,
+  .resume-row,
   .workspace {
     grid-template-columns: 1fr;
+  }
+
+  .resume-actions {
+    align-items: flex-start;
+    flex-direction: column;
   }
 
   .metrics {
