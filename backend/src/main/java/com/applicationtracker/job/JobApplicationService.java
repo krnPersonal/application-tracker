@@ -3,7 +3,9 @@ package com.applicationtracker.job;
 import com.applicationtracker.common.NotFoundException;
 import com.applicationtracker.user.UserAccount;
 import com.applicationtracker.user.UserRepository;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,8 +20,15 @@ public class JobApplicationService {
         this.users = users;
     }
 
-    public List<JobApplicationResponse> list(String email) {
+    public List<JobApplicationResponse> list(String email, String query, JobStatus status, String sort, String direction) {
+        Comparator<JobApplication> comparator = comparator(sort);
+        if ("desc".equalsIgnoreCase(direction)) {
+            comparator = comparator.reversed();
+        }
         return applications.findByUserEmailIgnoreCaseOrderByUpdatedAtDesc(email).stream()
+                .filter(application -> matchesQuery(application, query))
+                .filter(application -> status == null || application.getStatus() == status)
+                .sorted(comparator)
                 .map(JobApplicationResponse::from)
                 .toList();
     }
@@ -59,5 +68,31 @@ public class JobApplicationService {
 
     private String blankToNull(String value) {
         return value == null || value.isBlank() ? null : value.trim();
+    }
+
+    private boolean matchesQuery(JobApplication application, String query) {
+        if (query == null || query.isBlank()) {
+            return true;
+        }
+        String normalized = query.toLowerCase(Locale.ROOT);
+        return application.getCompany().toLowerCase(Locale.ROOT).contains(normalized)
+                || application.getTitle().toLowerCase(Locale.ROOT).contains(normalized)
+                || (application.getNotes() != null && application.getNotes().toLowerCase(Locale.ROOT).contains(normalized));
+    }
+
+    private Comparator<JobApplication> comparator(String sort) {
+        Comparator<JobApplication> fallback = Comparator.comparing(JobApplication::getUpdatedAt);
+        if (sort == null || sort.isBlank()) {
+            return fallback;
+        }
+        return switch (sort) {
+            case "company" -> Comparator.comparing(JobApplication::getCompany, String.CASE_INSENSITIVE_ORDER);
+            case "title" -> Comparator.comparing(JobApplication::getTitle, String.CASE_INSENSITIVE_ORDER);
+            case "appliedDate" -> Comparator.comparing(
+                    JobApplication::getAppliedDate,
+                    Comparator.nullsLast(Comparator.naturalOrder()));
+            case "status" -> Comparator.comparing(application -> application.getStatus().name());
+            default -> fallback;
+        };
     }
 }

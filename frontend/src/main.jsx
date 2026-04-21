@@ -19,6 +19,7 @@ function App() {
   const [applications, setApplications] = useState([]);
   const [dashboard, setDashboard] = useState(null);
   const [dashboardFilters, setDashboardFilters] = useState({ from: '', to: '' });
+  const [applicationFilters, setApplicationFilters] = useState({ q: '', status: '', sort: 'updatedAt', direction: 'desc' });
   const [authMode, setAuthMode] = useState('login');
   const [authForm, setAuthForm] = useState({ firstName: '', lastName: '', email: '', password: '' });
   const [form, setForm] = useState(emptyForm);
@@ -40,17 +41,23 @@ function App() {
     loadData();
   }, [token]);
 
-  async function loadData(filters = dashboardFilters) {
+  async function loadData(filters = dashboardFilters, appFilters = applicationFilters) {
     try {
       setLoading(true);
       const dashboardQuery = new URLSearchParams();
       if (filters.from) dashboardQuery.set('from', filters.from);
       if (filters.to) dashboardQuery.set('to', filters.to);
       const dashboardPath = `/api/dashboard${dashboardQuery.toString() ? `?${dashboardQuery}` : ''}`;
+      const applicationsQuery = new URLSearchParams();
+      if (appFilters.q) applicationsQuery.set('q', appFilters.q);
+      if (appFilters.status) applicationsQuery.set('status', appFilters.status);
+      if (appFilters.sort) applicationsQuery.set('sort', appFilters.sort);
+      if (appFilters.direction) applicationsQuery.set('direction', appFilters.direction);
+      const applicationsPath = `/api/applications${applicationsQuery.toString() ? `?${applicationsQuery}` : ''}`;
       const [me, dash, apps] = await Promise.all([
         api('/api/me', { token }),
         api(dashboardPath, { token }),
-        api('/api/applications', { token })
+        api(applicationsPath, { token })
       ]);
       setUser(me);
       setProfileForm({ firstName: me.firstName, lastName: me.lastName, email: me.email });
@@ -126,13 +133,24 @@ function App() {
 
   async function submitDashboardFilters(event) {
     event.preventDefault();
-    await loadData(dashboardFilters);
+    await loadData(dashboardFilters, applicationFilters);
   }
 
   function clearDashboardFilters() {
     const emptyFilters = { from: '', to: '' };
     setDashboardFilters(emptyFilters);
-    loadData(emptyFilters);
+    loadData(emptyFilters, applicationFilters);
+  }
+
+  async function submitApplicationFilters(event) {
+    event.preventDefault();
+    await loadData(dashboardFilters, applicationFilters);
+  }
+
+  function clearApplicationFilters() {
+    const emptyFilters = { q: '', status: '', sort: 'updatedAt', direction: 'desc' };
+    setApplicationFilters(emptyFilters);
+    loadData(dashboardFilters, emptyFilters);
   }
 
   async function submitResume(event) {
@@ -288,6 +306,14 @@ function App() {
             <h2>Applications</h2>
             <button className="secondary" onClick={() => { setForm(emptyForm); setEditingId(null); }}><Plus size={16} />New</button>
           </div>
+          <form className="list-filters" onSubmit={submitApplicationFilters}>
+            <label>Search<input value={applicationFilters.q} onChange={event => setApplicationFilters({ ...applicationFilters, q: event.target.value })} /></label>
+            <label>Status<select value={applicationFilters.status} onChange={event => setApplicationFilters({ ...applicationFilters, status: event.target.value })}><option value="">All</option>{statusOptions.map(status => <option key={status}>{status}</option>)}</select></label>
+            <label>Sort<select value={applicationFilters.sort} onChange={event => setApplicationFilters({ ...applicationFilters, sort: event.target.value })}><option value="updatedAt">Updated</option><option value="appliedDate">Applied date</option><option value="company">Company</option><option value="title">Title</option><option value="status">Status</option></select></label>
+            <label>Direction<select value={applicationFilters.direction} onChange={event => setApplicationFilters({ ...applicationFilters, direction: event.target.value })}><option value="desc">Desc</option><option value="asc">Asc</option></select></label>
+            <button className="primary fit" type="submit">Apply</button>
+            <button className="secondary fit" type="button" onClick={clearApplicationFilters}>Clear</button>
+          </form>
           {loading && <p className="muted">Loading...</p>}
           {applications.map(application => (
             <article className="application-card" key={application.id} onClick={() => editApplication(application)}>
