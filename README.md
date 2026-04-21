@@ -52,6 +52,12 @@ Swagger UI:
 http://localhost:8080/swagger-ui.html
 ```
 
+Health endpoint:
+
+```text
+http://localhost:8080/actuator/health
+```
+
 ## Run Frontend
 
 Optional local environment file:
